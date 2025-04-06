@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="initial-scale=1, maximum-scale=1, user-scalable=no">
+  <title>湖北莲藕分布地图</title>
+  <style>
+    html, body, #viewDiv {
+      padding: 0;
+      margin: 0;
+      height: 100%;
+      width: 100%;
+    }
+    
+    #container {
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      width: 100vw;
+    }
+    
+    #header {
+      height: 80px;
+      background-color: #2c3e50;
+      color: white;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-size: 24px;
+      font-weight: bold;
+    }
+    
+    #mainContent {
+      display: flex;
+      flex: 1;
+    }
+    
+    #mapArea {
+      flex: 3;
+      position: relative;
+    }
+    
+    #basemapGalleryArea {
+      flex: 1;
+      background-color: #f5f5f5;
+      padding: 10px;
+      overflow-y: auto;
+    }
+    
+    .esri-ui-top-right {
+      top: 90px !important;
+    }
+  </style>
+  
+  <link rel="stylesheet" href="https://js.arcgis.com/4.28/esri/themes/light/main.css">
+  <script src="https://js.arcgis.com/4.28/"></script>
+  
+  <script>
+    require([
+      "esri/Map",
+      "esri/views/MapView",
+      "esri/layers/FeatureLayer",
+      "esri/widgets/Legend",
+      "esri/widgets/ScaleBar",
+      "esri/widgets/Search",
+      "esri/widgets/LayerList",
+      "esri/widgets/BasemapGallery",
+      "esri/widgets/Expand",
+      "esri/Basemap",
+      "esri/symbols/SimpleLineSymbol",
+      "esri/symbols/SimpleFillSymbol",
+      "esri/renderers/SimpleRenderer",
+      "esri/Color"
+    ], function(Map, MapView, FeatureLayer, Legend, ScaleBar, Search, LayerList, BasemapGallery, Expand, Basemap, 
+                SimpleLineSymbol, SimpleFillSymbol, SimpleRenderer, Color) {
+      
+      // 创建地图
+      const map = new Map({
+        basemap: "streets-navigation-vector"
+      });
+      
+      // 创建蓝色线状符号用于河网
+      const waterSymbol = new SimpleLineSymbol({
+        color: new Color([0, 112, 255, 0.8]), // 蓝色
+        width: "2px"
+      });
+      
+      // 创建河网图层并设置渲染器
+      const waterLayer = new FeatureLayer({
+        url: "https://www.geosceneonline.cn/server/rest/services/Hosted/湖北莲藕/FeatureServer/2",
+        title: "湖北河网分布",
+        renderer: new SimpleRenderer({
+          symbol: waterSymbol
+        }),
+        opacity: 0.8
+      });
+      
+      // 湖北县界图层
+      const hubeiBoundary = new FeatureLayer({
+        url: "https://www.geosceneonline.cn/server/rest/services/Hosted/湖北莲藕/FeatureServer/1",
+        title: "湖北县界",
+        opacity: 0.6
+      });
+      
+      // 湖北莲藕分布图层（将最后添加以实现置顶效果）
+      const lotusLayer = new FeatureLayer({
+        url: "https://www.geosceneonline.cn/server/rest/services/Hosted/湖北莲藕/FeatureServer/4",
+        title: "湖北莲藕分布",
+        opacity: 0.8
+      });
+      
+      // 按顺序添加图层（最后添加的会显示在最上层）
+      map.add(waterLayer);
+      map.add(hubeiBoundary);
+      map.add(lotusLayer); // 最后添加，确保置顶
+      
+      // 创建视图
+      const view = new MapView({
+        container: "mapArea",
+        map: map,
+        center: [112.5, 31.2], // 湖北大致中心坐标
+        zoom: 7
+      });
+      
+      // 添加比例尺
+      const scaleBar = new ScaleBar({
+        view: view,
+        unit: "metric"
+      });
+      
+      view.ui.add(scaleBar, {
+        position: "bottom-left"
+      });
+      
+      // 添加图例
+      const legend = new Legend({
+        view: view
+      });
+      
+      view.ui.add(legend, "top-right");
+      
+      // 添加搜索框
+      const searchWidget = new Search({
+        view: view
+      });
+      
+      view.ui.add(searchWidget, {
+        position: "top-left",
+        index: 0
+      });
+      
+      // 添加图层列表
+      const layerList = new LayerList({
+        view: view,
+        // 为每个图层项添加透明度控制
+        listItemCreatedFunction: function(event) {
+          const item = event.item;
+          item.panel = {
+            content: "opacity",
+            className: "esri-icon-sliders-horizontal"
+          };
+        }
+      });
+      
+      view.ui.add(layerList, "top-right");
+      
+      // 创建底图库
+      const basemapGallery = new BasemapGallery({
+        view: view,
+        container: "basemapGalleryArea"
+      });
+      
+      // 当视图加载完成后执行
+      view.when(() => {
+        console.log("地图加载完成");
+      }).catch(error => {
+        console.error("地图加载出错:", error);
+      });
+    });
+  </script>
+</head>
+<body>
+  <div id="container">
+    <div id="header">
+      湖北莲藕分布地图
+    </div>
+    <div id="mainContent">
+      <div id="mapArea"></div>
+      <div id="basemapGalleryArea">
+        <h3>底图库</h3>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
